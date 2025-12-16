@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 // يُرجى استبدال YOUR_BOT_TOKEN ومعرف القناة (Channel ID) بالقيم الصحيحة.
-const TOKEN = 'YOUR_BOT_TOKEN'; 
+const TOKEN = 'MTQzMTQyODUwMjUyNzI3OTE4Ng.GXw_fk.qB7WeM44_kMmhXlZkWCAR4e1UJcbtzudgri7_A'; 
 
 // إنشاء عميل (Client) البوت
 const client = new Client({ 
