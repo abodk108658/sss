@@ -1,9 +1,10 @@
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
+const http = require('http'); // أضفنا هذا لضمان استقرار الاستضافة
 
-// يُرجى استبدال YOUR_BOT_TOKEN ومعرف القناة (Channel ID) بالقيم الصحيحة.
-const TOKEN = 'MTQzMTQyODUwMjUyNzI3OTE4Ng.GXw_fk.qB7WeM44_kMmhXlZkWCAR4e1UJcbtzudgri7_A'; 
+// استخدام متغير بيئة للتوكن لضمان الخصوصية
+const TOKEN = process.env.TOKEN; 
 
 // إنشاء عميل (Client) البوت
 const client = new Client({ 
@@ -19,17 +20,16 @@ client.commands = new Collection();
 
 // --- تحميل الأوامر من مجلد commands ---
 const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    const command = require(filePath);
-    
-    // تعيين كل أمر جديد في مجموعة client.commands
-    if ('data' in command && 'execute' in command) {
-        client.commands.set(command.data.name, command);
-    } else {
-        console.log(`[تحذير] الأمر في ${filePath} يفتقر إلى خاصية 'data' أو 'execute' المطلوبة.`);
+if (fs.existsSync(commandsPath)) {
+    const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+    for (const file of commandFiles) {
+        const filePath = path.join(commandsPath, file);
+        const command = require(filePath);
+        if ('data' in command && 'execute' in command) {
+            client.commands.set(command.data.name, command);
+        } else {
+            console.log(`[تحذير] الأمر في ${filePath} يفتقر إلى خاصية 'data' أو 'execute' المطلوبة.`);
+        }
     }
 }
 
@@ -38,26 +38,17 @@ client.once('ready', () => {
     console.log(`✅ تم تسجيل الدخول باسم: ${client.user.tag}`);
 });
 
-// --- معالج حدث on_interaction (لتنفيذ أوامر السلاش) ---
+// --- معالج حدث on_interaction ---
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
-
     const command = client.commands.get(interaction.commandName);
-
-    if (!command) {
-        console.error(`لم يتم العثور على أمر يطابق ${interaction.commandName}.`);
-        return;
-    }
+    if (!command) return;
 
     try {
         await command.execute(interaction);
     } catch (error) {
         console.error(error);
-        const replyOptions = {
-            content: 'والله شوف الصراحه شوف الصراحه والله في غلط مدري ايش هو لاكن حدث خطا', 
-            ephemeral: true 
-        };
-        // التحقق مما إذا كان قد تم الرد بالفعل
+        const replyOptions = { content: 'حدث خطأ أثناء تنفيذ الأمر.', ephemeral: true };
         if (interaction.deferred || interaction.replied) {
             await interaction.editReply(replyOptions);
         } else {
@@ -66,5 +57,15 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
+// سرفر بسيط جداً لإبقاء استضافة Render تعمل ولا تعطي خطأ Port
+http.createServer((req, res) => {
+    res.write("Bot is running!");
+    res.end();
+}).listen(process.env.PORT || 10000);
+
 // تشغيل البوت
-client.login(TOKEN);
+if (TOKEN) {
+    client.login(TOKEN);
+} else {
+    console.error("❌ خطأ: لم يتم العثور على TOKEN في إعدادات البيئة (Environment Variables).");
+}
