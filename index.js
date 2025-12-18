@@ -1,7 +1,7 @@
 const { Client, GatewayIntentBits, Collection, Events, EmbedBuilder } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
-const cron = require('node:cron');
+const cron = require('node-cron');
 const http = require('http');
 
 const client = new Client({ 
